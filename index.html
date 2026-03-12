@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candidats Municipales 2026 — Parité & Compétition</title>
+<meta property="og:title" content="Qui se présente aux municipales 2026 ?"/>
+<meta property="og:description" content="50 478 listes — parité des têtes de liste — données officielles Ministère de l'Intérieur"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #f2efe9;
+    --border: #ddd8cf;
+    --text: #2c2825;
+    --muted: #c8c2b8;
+    --muted2: #8a847c;
+    --female: #c97a96;
+    --accent: #5c8f6a;
+    --warn: #c07a3a;
+    --serif: 'Lora', Georgia, serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-weight:300; font-size:15px; line-height:1.6; }
+
+  header {
+    padding:3.5rem 6vw 3rem;
+    border-bottom:1px solid var(--border);
+    display:grid; grid-template-columns:1fr auto; gap:3rem; align-items:end;
+  }
+  @media(max-width:700px){ header{grid-template-columns:1fr;} }
+  h1 { font-family:var(--serif); font-size:clamp(1.8rem,4vw,3rem); font-weight:600; line-height:1.15; letter-spacing:-0.01em; }
+  h1 em { color:var(--accent); font-style:italic; }
+  .sub { font-size:0.72rem; color:var(--muted2); letter-spacing:0.08em; text-transform:uppercase; margin-top:0.75rem; }
+
+  .kpis { display:flex; gap:2.5rem; flex-wrap:wrap; }
+  .kpi { text-align:right; }
+  .kpi-n { font-family:var(--serif); font-size:2rem; font-weight:600; color:var(--accent); line-height:1; }
+  .kpi-l { font-size:0.62rem; color:var(--muted2); letter-spacing:0.08em; text-transform:uppercase; margin-top:0.25rem; }
+
+  nav {
+    position:sticky; top:0; z-index:50;
+    background:rgba(250,248,245,0.95); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    padding:0 6vw; display:flex; overflow-x:auto;
+  }
+  nav a {
+    display:block; padding:0.9rem 1.2rem;
+    font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--muted2); text-decoration:none;
+    border-bottom:2px solid transparent; white-space:nowrap;
+    transition:color .2s, border-color .2s;
+  }
+  nav a:hover { color:var(--text); }
+  nav a.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  main { padding:0 6vw 6rem; }
+  .section { padding:4rem 0 2rem; border-top:1px solid var(--border); margin-top:1rem; }
+  .section:first-child { border-top:none; }
+
+  .sec-head { display:flex; align-items:baseline; gap:1rem; margin-bottom:2.2rem; flex-wrap:wrap; }
+  .sec-num { font-size:0.62rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); font-weight:500; flex-shrink:0; }
+  .sec-title { font-family:var(--serif); font-size:1.3rem; font-weight:600; letter-spacing:-0.01em; }
+  .sec-note { font-size:0.65rem; color:var(--muted2); margin-left:auto; text-align:right; line-height:1.5; }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:start; margin-bottom:1.5rem; }
+  @media(max-width:820px){ .two-col{grid-template-columns:1fr;} }
+
+  .col-label { font-size:0.64rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted2); margin-bottom:0.9rem; }
+
+  .badge-source {
+    display:inline-block; font-size:0.6rem; letter-spacing:0.06em; text-transform:uppercase;
+    background:var(--surface); border:1px solid var(--border); color:var(--accent);
+    padding:0.2rem 0.55rem; border-radius:3px; margin-bottom:0.9rem; font-weight:500;
+  }
+
+  .insight {
+    border-left:2px solid var(--accent); background:var(--surface);
+    padding:1.1rem 1.4rem; font-size:0.82rem; line-height:1.8;
+    color:var(--muted2); margin-top:1.8rem; max-width:820px;
+    border-radius:0 4px 4px 0;
+  }
+  .insight strong { color:var(--text); font-weight:500; }
+  .src { font-size:0.62rem; margin-top:0.6rem; opacity:.6; }
+
+  .chart-scroll { overflow-x:auto; }
+  svg text { font-family:var(--sans); }
+
+  .stat-cards {
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:1px; background:var(--border);
+    border:1px solid var(--border); border-radius:6px; overflow:hidden;
+  }
+  @media(max-width:500px){ .stat-cards{grid-template-columns:1fr;} }
+  .sc { background:var(--surface); padding:1.4rem 1.6rem; }
+  .sc-n { font-family:var(--serif); font-size:2rem; font-weight:600; line-height:1; }
+  .sc-l { font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted2); margin-top:.35rem; }
+  .sc-d { font-size:.75rem; color:var(--muted2); margin-top:.6rem; line-height:1.6; }
+
+  .cards-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:1px; background:var(--border);
+    border:1px solid var(--border); border-radius:6px; overflow:hidden;
+  }
+
+  #tt {
+    position:fixed; pointer-events:none;
+    background:white; border:1px solid var(--border);
+    padding:.8rem 1.1rem; font-size:.72rem; line-height:1.65;
+    max-width:240px; z-index:999; opacity:0; transition:opacity .12s;
+    border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,.08);
+  }
+  #tt.on { opacity:1; }
+  .tt-h { font-family:var(--serif); font-size:.82rem; font-weight:600; color:var(--accent); margin-bottom:.4rem; }
+  .rr { display:flex; justify-content:space-between; gap:1rem; }
+  .vv { color:var(--text); font-weight:500; }
+
+  /* ── NUANCE EXPLAINER ── */
+  .nuance-explainer {
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--surface);
+    margin-bottom:1.2rem;
+    overflow:hidden;
+  }
+  .nuance-explainer summary {
+    display:flex; align-items:center; gap:0.75rem;
+    padding:0.75rem 1rem 0.75rem 0.85rem;
+    cursor:pointer;
+    list-style:none;
+    font-size:0.82rem;
+    color:var(--text);
+    user-select:none;
+  }
+  .nuance-explainer summary::-webkit-details-marker { display:none; }
+  .nuance-explainer summary:hover { background:#eae6de; }
+  .nuance-explainer-icon {
+    width:22px; height:22px; border-radius:50%;
+    background:var(--accent); color:white;
+    font-size:0.75rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .nuance-explainer-toggle {
+    margin-left:auto; flex-shrink:0;
+    font-size:0.68rem; letter-spacing:0.07em; text-transform:uppercase;
+    font-weight:600; color:white;
+    background:var(--accent);
+    padding:0.28rem 0.75rem;
+    border-radius:3px;
+    transition: background 0.15s;
+  }
+  .nuance-explainer summary:hover .nuance-explainer-toggle { background:#4a7558; }
+  details.nuance-explainer[open] .nuance-explainer-toggle::before { content:"▲ Masquer"; }
+  details.nuance-explainer:not([open]) .nuance-explainer-toggle::before { content:"▼ Afficher"; }
+  .nuance-explainer-toggle { font-size:0; }
+  .nuance-explainer-toggle::before { font-size:0.68rem; }
+  .nuance-explainer-body {
+    padding:0 1.4rem 1.2rem;
+    border-top:1px solid var(--border);
+    font-size:0.8rem; line-height:1.8; color:var(--muted2);
+  }
+  .nuance-explainer-body p { margin-top:0.75rem; }
+  .nuance-explainer-body strong { color:var(--text); font-weight:500; }
+  .nuance-explainer-body ul { margin:0.5rem 0 0.5rem 1.2rem; }
+  .nuance-explainer-body li { margin-bottom:0.3rem; }
+  .nuance-explainer-body a { color:var(--accent); }
+  .nuance-note { font-size:0.72rem; margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid var(--border); }
+
+  /* ── VERBATIM GRID ── */
+  .verbatim-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap:1rem;
+    margin-top:1rem;
+  }
+  .verbatim-block {
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:5px;
+    padding:0.8rem 1rem;
+  }
+  .verbatim-label {
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--accent);
+    font-weight:600;
+    margin-bottom:0.6rem;
+  }
+  .verbatim-rows { display:flex; flex-direction:column; gap:0.45rem; }
+  .verbatim-row {
+    display:flex; gap:0.7rem; align-items:baseline;
+    font-size:0.78rem; color:var(--muted2); line-height:1.5;
+  }
+  .verbatim-pct {
+    font-size:0.95rem; font-weight:700;
+    color:var(--text); white-space:nowrap; min-width:2.8rem;
+    font-family:'Lora', serif;
+  }
+  .verbatim-quote {
+    margin-top:1.2rem;
+    padding:0.9rem 1.2rem;
+    border-left:3px solid var(--warn);
+    background:var(--bg);
+    font-style:italic;
+    font-size:0.82rem;
+    color:var(--text);
+    line-height:1.7;
+    border-radius:0 5px 5px 0;
+  }
+  .verbatim-quote-src {
+    display:block;
+    font-style:normal;
+    font-size:0.7rem;
+    color:var(--muted2);
+    margin-top:0.4rem;
+  }
+
+  .srcbar { margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--border); font-size:.68rem; color:var(--muted2); line-height:2; }
+  .srcbar a { color:var(--muted2); text-decoration:underline; text-decoration-color:var(--border); }
+  .srcbar a:hover { color:var(--text); }
+
+  footer {
+    border-top:1px solid var(--border); padding:1.5rem 6vw;
+    font-size:.68rem; color:var(--muted2);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:.5rem;
+  }
+  footer a { color:var(--muted2); }
+</style>
+</head>
+<body>
+<div id="tt"></div>
+
+<header>
+  <div>
+    <h1>Qui se présente<br>aux <em>Municipales 2026</em>&nbsp;?</h1>
+    <p class="sub">Parité des têtes de liste &amp; compétition électorale — données officielles Ministère de l'Intérieur</p>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-n">50 478</div><div class="kpi-l">Listes</div></div>
+    <div class="kpi"><div class="kpi-n">34 986</div><div class="kpi-l">Communes</div></div>
+    <div class="kpi"><div class="kpi-n">25 %</div><div class="kpi-l">Femmes en tête de liste</div></div>
+    <div class="kpi"><div class="kpi-n">54 %</div><div class="kpi-l">Maires recandidats</div></div>
+  </div>
+</header>
+
+<nav>
+  <a href="#parite" class="active">01 · Parité des têtes de liste</a>
+  <a href="#maires">02 · Maires sortants</a>
+  <a href="#competition">03 · Compétition</a>
+</nav>
+
+<main>
+
+<!-- ══ 01 PARITÉ ══ -->
+<section class="section" id="parite">
+  <div class="sec-head">
+    <span class="sec-num">01</span>
+    <span class="sec-title">Nuances politiques — distribution &amp; parité des têtes de liste</span>
+    <span class="sec-note">Source : fichier candidatures Ministère de l'Intérieur, 28/02/2026<br>50 478 listes · codes nuance bruts (classification préfectorale)</span>
+  </div>
+
+  <!-- Encart explicatif nuances -->
+  <details class="nuance-explainer">
+    <summary>
+      <span class="nuance-explainer-icon">ℹ</span>
+      <strong>Comment les nuances sont-elles attribuées ?</strong>
+      <span class="nuance-explainer-toggle">Afficher</span>
+    </summary>
+    <div class="nuance-explainer-body">
+      <p>Les nuances politiques sont attribuées par les <strong>préfets</strong>, pas par les candidats eux-mêmes.
+      Elles sont distinctes de l'étiquette librement choisie lors du dépôt de candidature.
+      Leur objectif est de permettre une <strong>analyse électorale nationale</strong> des résultats.</p>
+      <p>Selon la <a href="https://www.legifrance.gouv.fr/circulaire/id/45645" target="_blank">circulaire du 2 février 2026</a>, trois règles s'appliquent :</p>
+      <ul>
+        <li><strong>Nuance propre</strong> — liste investie officiellement par un seul parti disposant d'une nuance (ex. REN, LLR, LRN…)</li>
+        <li><strong>Nuance d'alliance</strong> — liste soutenue par au moins deux partis du même bloc (ex. LUG, LUD…)</li>
+        <li><strong>Nuance de sensibilité</strong> — tous les autres cas : liste soutenue sans investiture officielle, ou parti sans nuance propre (ex. LDVG, LEXG…)</li>
+      </ul>
+      <p><strong>Seuil d'attribution : 3 500 habitants</strong> (+ chefs-lieux d'arrondissement).
+      En dessous, aucune nuance n'est attribuée — ce qui explique les 40 913 listes sans code dans ce fichier.</p>
+      <p class="nuance-note">Note : LFI est classée pour la première fois dans le bloc <em>extrême gauche</em> (LEXG) par cette circulaire.
+      Le Conseil d'État a rejeté les recours de LFI et de l'UDR contre ce classement le 27 février 2026.
+      <a href="https://www.vie-publique.fr/en-bref/301970-municipales-2026-la-circulaire-pour-lattribution-des-nuances" target="_blank">→ Source complète : vie-publique.fr</a></p>
+    </div>
+  </details>
+
+  <!-- Distribution -->
+  <div class="badge-source" style="margin-top:1.2rem">Ministère de l'Intérieur · Fichier candidatures · 28/02/2026</div>
+  <div class="col-label" style="margin-top:0.4rem">Nombre de listes et de candidats par nuance — toutes communes</div>
+  <div class="chart-scroll"><svg id="chart-distrib"></svg></div>
+
+  <div class="insight">
+    <strong>81 % des listes n'ont aucune nuance attribuée</strong> (code vide, 40 913 listes) — ce sont quasi-exclusivement les communes de moins de 1 000 habitants
+    où la préfecture ne code pas la couleur politique. Les nuances nationales ne couvrent donc que les grandes et moyennes communes.
+    <div class="src">Source : Ministère de l'Intérieur, fichier candidatures 28/02/2026, Licence Ouverte 2.0</div>
+  </div>
+
+  <!-- Parité -->
+  <div class="sec-head" style="margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border);">
+    <span class="sec-num" style="color:var(--female)">→</span>
+    <span class="sec-title" style="font-size:1.1rem">Parité des têtes de liste par nuance &amp; évolution</span>
+    <span class="sec-note">Uniquement les nuances avec au moins 20 listes</span>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="col-label">% de femmes en tête de liste par nuance politique</div>
+      <div class="chart-scroll"><svg id="chart-parite"></svg></div>
+      <div class="insight" style="margin-top:1rem">
+        La loi impose l'alternance stricte homme/femme sur les listes depuis 2007 — la composition des listes ne dit rien de politique.
+        <strong>Qui mène la liste choisit le programme, incarne la campagne, et devient maire si la liste gagne.</strong>
+        La progression est lente : 19 % en 2008, 25 % en 2026, soit +6 points en 18 ans.
+        <div class="src">Source : Ministère de l'Intérieur, fichier candidatures 28/02/2026, Licence Ouverte 2.0 · CEVIPOF note n°1 mars 2026 (Pierre-Henri Bono, Sciences Po)</div>
+      </div>
+    </div>
+    <div>
+      <div class="badge-source">CEVIPOF · Panorama statistique · Note n°1 mars 2026</div>
+      <div class="col-label">Évolution 2008–2026 — % femmes têtes de liste</div>
+      <svg id="chart-parite-evol"></svg>
+      <div class="stat-cards" style="margin-top:1.2rem">
+        <div class="sc">
+          <div class="sc-n" style="color:var(--female)">25 %</div>
+          <div class="sc-l">Femmes en tête de liste — 2026</div>
+          <div class="sc-d">La <strong>tête de liste</strong> est le ou la candidat·e placé·e en première position : c'est lui ou elle qui incarne la liste, mène la campagne, et devient maire en cas de victoire. Sur 50 478 listes déposées. Contre 23 % en 2020.</div>
+        </div>
+        <div class="sc">
+          <div class="sc-n" style="color:var(--text)">41 %</div>
+          <div class="sc-l">Communistes (PCF) — meilleur taux</div>
+          <div class="sc-d">Parmi les nuances avec plus de 100 listes déposées.</div>
+        </div>
+        <div class="sc">
+          <div class="sc-n" style="color:var(--warn)">20 %</div>
+          <div class="sc-l">Horizons / MoDem — taux le plus bas</div>
+          <div class="sc-d">Sur seulement 5 listes recensées dans ce fichier.</div>
+        </div>
+        <div class="sc">
+          <div class="sc-n" style="color:var(--muted2)">+6 pp</div>
+          <div class="sc-l">Progression en 18 ans (2008–2026)</div>
+          <div class="sc-d">À ce rythme, la parité des têtes de liste ne serait atteinte qu'après 2080.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 02 MAIRES SORTANTS ══ -->
+<section class="section" id="maires">
+  <div class="sec-head">
+    <span class="sec-num">02</span>
+    <span class="sec-title">Maires sortants — taux de recandidature</span>
+    <span class="sec-note">Source : CEVIPOF note n°1 mars 2026<br>Croisement RNE × candidatures Ministère de l'Intérieur</span>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="badge-source">CEVIPOF · Croisement RNE × candidatures · Note n°1 mars 2026</div>
+      <div class="col-label">Évolution 2008–2026 — % de maires sortants se représentant</div>
+      <svg id="chart-maires-evol"></svg>
+    </div>
+    <div style="margin-top:2.4rem">
+      <div class="stat-cards">
+        <div class="sc">
+          <div class="sc-n" style="color:var(--warn)">54 %</div>
+          <div class="sc-l">Maires sortants candidats en 2026</div>
+          <div class="sc-d">Chute historique — contre ~70 % en 2020. Près d'un maire sur deux ne se représente pas, du jamais vu depuis que ces données sont disponibles.</div>
+        </div>
+        <div class="sc">
+          <div class="sc-n" style="color:var(--muted2)">−24 pp</div>
+          <div class="sc-l">Recul depuis 2008</div>
+          <div class="sc-d">En 2008, ~78 % des maires sortants se représentaient. En moins de 20 ans, ce taux a chuté de 24 points.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>Moins d'un maire sortant sur deux se représente en 2026</strong> — un record absolu depuis que ces données sont disponibles.
+    La note CEVIPOF attribue cette chute notamment au <strong>changement de scrutin</strong> : pour la première fois, toutes les communes
+    (y compris les plus petites) doivent constituer une liste complète paritaire.
+    Dans les communes de moins de 1 000 habitants, trouver des candidats pour compléter une liste est devenu un obstacle majeur.
+    <div class="src">Source : CEVIPOF note n°1 mars 2026 (Pierre-Henri Bono, Sciences Po) · RNE extraction 23/02/2026</div>
+  </div>
+
+  <!-- Accordéon enquête CEVIPOF/AMF -->
+  <details class="nuance-explainer" style="margin-top:1.5rem" open>
+    <summary>
+      <span class="nuance-explainer-icon">📊</span>
+      <strong>Enquête CEVIPOF/AMF (avril 2025) — Pourquoi les maires renoncent-ils ?</strong>
+      <span class="nuance-explainer-toggle"></span>
+    </summary>
+    <div class="nuance-explainer-body">
+
+      <p>Entre mars et avril 2025, le CEVIPOF a interrogé <strong>5 266 maires</strong> (taux de réponse 15,2 %).
+      Résultat global : <strong>42 % souhaitent se représenter</strong>, 28 % y renoncent fermement, 30 % sont indécis.
+      Les chiffres ci-dessous concernent <em>les 58 % de maires qui renoncent ou sont indécis</em>, sauf mention contraire.</p>
+
+      <div class="verbatim-grid">
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Raisons institutionnelles invoquées<br><small style="font-weight:400;text-transform:none;letter-spacing:0">par les maires qui renoncent ou sont indécis</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">17 %</span><span>Manque de ressources financières — la 1<sup>re</sup> raison citée</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">15 %</span><span>Exigence trop forte des citoyens — 2<sup>e</sup> raison institutionnelle</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">74 %</span><span>Des maires (tous) partagent le constat d'une exigence citoyenne excessive — donnée générale sur l'ensemble du panel</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Raisons personnelles invoquées<br><small style="font-weight:400;text-transform:none;letter-spacing:0">par les maires qui renoncent ou sont indécis</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">20 %</span><span>Sentiment du devoir accompli — 1<sup>re</sup> raison personnelle</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">19 %</span><span>Insécurité personnelle et surexposition face aux comportements des citoyens</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Violences subies depuis 2020<br><small style="font-weight:400;text-transform:none;letter-spacing:0">ensemble des maires interrogés</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">61 %</span><span>Victimes d'incivilités</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">36 %</span><span>Menaces verbales ou écrites</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">33 %</span><span>Insultes et injures</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">25 %</span><span>Attaques sur les réseaux sociaux</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Charge horaire — ensemble des maires</div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">32 h</span><span>Par semaine consacrées au mandat en moyenne</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">3 sem.</span><span>De vacances par an en moyenne</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Intention de se représenter selon la taille<br><small style="font-weight:400;text-transform:none;letter-spacing:0">% qui souhaitent se représenter en 2026</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">70 %</span><span>Communes de + de 9 000 hab.</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">37 %</span><span>Communes de – de 500 hab.</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">13 %</span><span>Renoncent dans les grandes communes (vs 30 % dans les moins de 500 hab.)</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Intention de se représenter selon les mandats<br><small style="font-weight:400;text-transform:none;letter-spacing:0">% qui souhaitent se représenter en 2026</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">46 %</span><span>Après un 1<sup>er</sup> mandat</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">38 %</span><span>Après un 2<sup>e</sup> mandat</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">36 %</span><span>Après 3 mandats ou plus</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">35 %</span><span>Même après 5 mandats — la fidélité territoriale reste forte</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Intention de se représenter selon le statut<br><small style="font-weight:400;text-transform:none;letter-spacing:0">% qui souhaitent se représenter en 2026</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">53 %</span><span>Maires en activité professionnelle</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">33 %</span><span>Maires retraités — signal d'alerte sur le relève</span></div>
+          </div>
+        </div>
+
+        <div class="verbatim-block">
+          <div class="verbatim-label">Le facteur psychologique<br><small style="font-weight:400;text-transform:none;letter-spacing:0">% souhaitant se représenter selon l'humeur</small></div>
+          <div class="verbatim-rows">
+            <div class="verbatim-row"><span class="verbatim-pct">×3</span><span>Les maires qui se disent "heureux" sont presque 3 fois plus nombreux à vouloir se représenter que les "malheureux"</span></div>
+            <div class="verbatim-row"><span class="verbatim-pct">51 %</span><span>Des maires "malheureux" renoncent dès aujourd'hui (contre 26 % des "heureux")</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="verbatim-quote">
+        «&nbsp;Je ne compte plus les heures. Entre les appels le soir, les urgences du quotidien et les exigences réglementaires, je n'ai plus de vie personnelle.&nbsp;»
+        <span class="verbatim-quote-src">— Un maire de l'Allier, enquête CEVIPOF/AMF 2025</span>
+      </div>
+      <div class="verbatim-quote" style="margin-top:0.7rem">
+        «&nbsp;En 2026, je ne serai pas candidat à ma succession car trop de fatigue et d'usure.&nbsp;»
+        <span class="verbatim-quote-src">— Frédéric Marche, maire de Cléon (Seine-Maritime) depuis 2015, aux Assises de l'APVF</span>
+      </div>
+
+      <p class="nuance-note">
+        <strong>Note méthodologique :</strong> enquête administrée en ligne auprès de 34 690 maires entre le 3 et le 31 mars 2025 — 5 266 réponses (15,2 % de taux de réponse). Représentativité garantie pour les communes de moins de 9 000 habitants.
+        <br><br>
+        <a href="https://medias.amf.asso.fr/docs/DOCUMENTS/b064e9013fc40af2955c2ecd842b090b.pdf" target="_blank">→ Note d'analyse complète — Foucault &amp; Kerrouche, CEVIPOF/AMF, avril 2025 (PDF)</a>
+        &nbsp;·&nbsp;
+        <a href="https://www.maire-info.com/2-189-maires-ont-demissionne-depuis-le-debut-du-mandat--article2-29811" target="_blank">→ Étude Martial Foucault sur les 2 189 démissions 2020–2025 (Maire-Info)</a>
+      </p>
+    </div>
+  </details>
+
+  <div class="insight" style="border-color:var(--warn); margin-top:1rem; font-size:0.78rem;">
+    <strong>Données manquantes :</strong> le taux de recandidature par taille de commune n'est pas encore calculable
+    depuis les fichiers open data disponibles — le croisement nominatif RNE × candidatures nécessite un traitement
+    que seul le CEVIPOF a réalisé à ce stade. Ces données seront ajoutées dès publication d'un fichier enrichi.
+  </div>
+</section>
+
+<!-- ══ 03 COMPÉTITION ══ -->
+<section class="section" id="competition">
+  <div class="sec-head">
+    <span class="sec-num">03</span>
+    <span class="sec-title">Structure de la compétition électorale</span>
+    <span class="sec-note">Source : Ministère de l'Intérieur, 28/02/2026</span>
+  </div>
+
+  <div class="badge-source">Ministère de l'Intérieur · Fichier listes candidates · 28/02/2026</div>
+  <div class="cards-grid">
+    <div class="sc"><div class="sc-n" style="color:var(--warn)">68 %</div><div class="sc-l">Communes sans compétition</div><div class="sc-d">Une seule liste déposée — les électeurs n'ont pas de choix réel, en hausse vs ~60 % en 2020. Concerne quasi-exclusivement les communes de moins de 1 000 hab. Dans ces communes, les élus seront désignés sans opposition quelle que soit la participation : le vote devient une formalité, pas un arbitrage. La taille exacte des communes touchées n'est pas encore calculable depuis les fichiers open data.</div></div>
+    <div class="sc"><div class="sc-n" style="color:var(--text)">68</div><div class="sc-l">Communes sans aucune liste</div><div class="sc-d">Pas d'élection possible. En recul vs 106 en 2020 — mais chaque commune sans candidat est une anomalie démocratique.</div></div>
+    <div class="sc"><div class="sc-n" style="color:var(--text)">1,8</div><div class="sc-l">Candidats par siège</div><div class="sc-d">~500 000 sièges à pourvoir pour 904 042 candidats inscrits sur les listes.</div></div>
+    <div class="sc"><div class="sc-n" style="color:var(--accent)">100 %</div><div class="sc-l">Communes au scrutin de liste</div><div class="sc-d">Changement historique 2026 : pour la 1<sup>re</sup> fois, <strong>toutes</strong> les communes votent au scrutin de liste — y compris celles de moins de 1 000 hab. Le scrutin de liste impose de présenter une liste complète de candidats, alternant homme et femme (parité stricte), et d'en désigner un·e en tête. Les électeurs votent pour une liste entière, pas pour des individus.</div></div>
+    <div class="sc"><div class="sc-n" style="color:var(--text)">48,5 M</div><div class="sc-l">Électeurs inscrits</div><div class="sc-d">+8,5 millions depuis 2001.</div></div>
+    <div class="sc"><div class="sc-n" style="color:var(--warn)">337</div><div class="sc-l">Députés candidats</div><div class="sc-d">Soit <strong>58 % des 577 députés</strong> de l'Assemblée nationale. Dont 109 en tête de liste. L'ancrage local reste un investissement stratégique pour les parlementaires.</div></div>
+  </div>
+
+  <div class="srcbar">
+    <strong style="color:var(--text)">Sources des données :</strong><br>
+    · <a href="https://www.data.gouv.fr/datasets/elections-municipales-2026-listes-candidates-au-premier-tour" target="_blank">data.gouv.fr — Listes candidates municipales 2026 (Ministère de l'Intérieur, 28/02/2026, Licence Ouverte 2.0)</a><br>
+    · <a href="https://www.sciencespo.fr/cevipof/sites/sciencespo.fr.cevipof/files/MUNICIPALES_PH_Panorama_mars26.pdf" target="_blank">CEVIPOF — Panorama statistique des élections municipales, note n°1 mars 2026 (Pierre-Henri Bono, Sciences Po)</a><br>
+    · <a href="https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1" target="_blank">data.gouv.fr — Répertoire National des Élus (RNE, extraction 23/02/2026, Ministère de l'Intérieur)</a>
+  </div>
+</section>
+</main>
+
+<footer>
+  <span>Données : <a href="https://www.data.gouv.fr" target="_blank">data.gouv.fr</a> · Ministère de l'Intérieur · CEVIPOF Sciences Po</span>
+  <span>Élections municipales 15 &amp; 22 mars 2026 · Open data · Libre de partager</span>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// DONNÉES RÉELLES
+// Source 1 : Ministère de l'Intérieur, fichier candidatures 28/02/2026
+//            https://www.data.gouv.fr/api/1/datasets/r/b929c2a4-18ec-4e8b-bc37-2ff346a867cd
+//            Calcul : 50 478 têtes de liste (ordre=1), agrégation par nuance
+// Source 2 : CEVIPOF note n°1 mars 2026 (Pierre-Henri Bono)
+//            Évolution historique + taux maires sortants
+// ══════════════════════════════════════════════════════════════
+
+// ── Données brutes par code nuance (CSV Ministère, 28/02/2026) ──────────────
+// code | libellé officiel | candidats | listes (= têtes de liste) | femmes TdL | % femmes TdL
+const NUANCES_RAW = [
+  {code:"",     lib:"Sans nuance attribuée",                    cand:574572, listes:40913, f:9961,  pct:24.3},
+  {code:"LDVD", lib:"Divers droite",                            cand:72767,  listes:2201,  f:474,   pct:21.5},
+  {code:"LDVG", lib:"Divers gauche",                            cand:61088,  listes:1838,  f:522,   pct:28.4},
+  {code:"LDIV", lib:"Divers",                                   cand:46945,  listes:1464,  f:357,   pct:24.4},
+  {code:"LDVC", lib:"Divers centre",                            cand:40794,  listes:1211,  f:290,   pct:23.9},
+  {code:"LUG",  lib:"Union à gauche",                           cand:19193,  listes:476,   f:142,   pct:29.8},
+  {code:"LRN",  lib:"Rassemblement National",                   cand:15718,  listes:425,   f:95,    pct:22.4},
+  {code:"LEXG", lib:"Extrême gauche / Parti communiste",        cand:16687,  listes:371,   f:152,   pct:41.0},
+  {code:"LFI",  lib:"La France insoumise",                      cand:10616,  listes:241,   f:90,    pct:37.3},
+  {code:"LLR",  lib:"Les Républicains",                         cand:5679,   listes:150,   f:34,    pct:22.7},
+  {code:"LEXD", lib:"Extrême droite",                           cand:3138,   listes:85,    f:16,    pct:18.8},
+  {code:"LSOC", lib:"Parti socialiste",                         cand:3131,   listes:85,    f:29,    pct:34.1},
+  {code:"LREG", lib:"Régionaliste",                             cand:2679,   listes:79,    f:27,    pct:34.2},
+  {code:"LUXD", lib:"Union extrême droite",                     cand:2820,   listes:68,    f:12,    pct:17.6},
+  {code:"LUC",  lib:"Union au centre",                          cand:2490,   listes:58,    f:11,    pct:19.0},
+  {code:"LUD",  lib:"Union à droite",                           cand:2118,   listes:48,    f:5,     pct:10.4},
+  {code:"LECO", lib:"Écologiste",                               cand:1556,   listes:42,    f:13,    pct:31.0},
+  {code:"LCOM", lib:"Parti communiste français",                cand:1436,   listes:42,    f:9,     pct:21.4},
+  {code:"LVEC", lib:"Les Écologistes",                          cand:1324,   listes:31,    f:12,    pct:38.7},
+  {code:"LUDI", lib:"Union des Démocrates Indépendants",        cand:801,    listes:21,    f:2,     pct:9.5},
+  {code:"LUDR", lib:"Union des droites pour la République",     cand:693,    listes:20,    f:5,     pct:25.0},
+  {code:"LREC", lib:"Reconquête !",                             cand:894,    listes:18,    f:5,     pct:27.8},
+  {code:"LHOR", lib:"Horizons",                                 cand:283,    listes:7,     f:2,     pct:28.6},
+  {code:"LDSV", lib:"Droite souverainiste",                     cand:207,    listes:5,     f:0,     pct:0.0},
+  {code:"LMDM", lib:"Mouvement Démocrate",                      cand:183,    listes:5,     f:1,     pct:20.0},
+  {code:"LREN", lib:"Renaissance",                              cand:156,    listes:4,     f:2,     pct:50.0},
+];
+
+// Nuances avec ≥ 20 listes (codes bruts, calculé depuis CSV officiel)
+const PARITE = [
+  {label:"Sans nuance attribuée",              total:40913, tdl_f:24.3},
+  {label:"Divers droite",                      total:2201,  tdl_f:21.5},
+  {label:"Divers gauche",                      total:1838,  tdl_f:28.4},
+  {label:"Divers",                             total:1464,  tdl_f:24.4},
+  {label:"Divers centre",                      total:1211,  tdl_f:23.9},
+  {label:"Union à gauche",                     total:476,   tdl_f:29.8},
+  {label:"Rassemblement National",             total:425,   tdl_f:22.4},
+  {label:"Extrême gauche / Parti communiste",  total:371,   tdl_f:41.0},
+  {label:"La France insoumise",                total:241,   tdl_f:37.3},
+  {label:"Les Républicains",                   total:150,   tdl_f:22.7},
+  {label:"Extrême droite",                     total:85,    tdl_f:18.8},
+  {label:"Parti socialiste",                   total:85,    tdl_f:34.1},
+  {label:"Régionaliste",                       total:79,    tdl_f:34.2},
+  {label:"Union extrême droite",               total:68,    tdl_f:17.6},
+  {label:"Union au centre",                    total:58,    tdl_f:19.0},
+  {label:"Union à droite",                     total:48,    tdl_f:10.4},
+  {label:"Écologiste",                         total:42,    tdl_f:31.0},
+  {label:"Parti communiste français",          total:42,    tdl_f:21.4},
+  {label:"Les Écologistes",                    total:31,    tdl_f:38.7},
+  {label:"Union des Démocrates Indépendants",  total:21,    tdl_f:9.5},
+  {label:"Union des droites pour la Rép.",     total:20,    tdl_f:25.0},
+];
+
+// Source : CEVIPOF note n°1 mars 2026
+const TDL_EVOL = [
+  {yr:2008, v:19},
+  {yr:2014, v:22},
+  {yr:2020, v:23},
+  {yr:2026, v:25},
+];
+
+// Source : CEVIPOF note n°1 mars 2026 (croisement RNE × candidatures)
+const MAIRES_EVOL = [
+  {yr:2008, v:78},
+  {yr:2014, v:75},
+  {yr:2020, v:70},
+  {yr:2026, v:54},
+];
+
+// ══════ TOOLTIP ══════
+const tt=document.getElementById("tt");
+const showTT=(html,e)=>{tt.innerHTML=html;tt.classList.add("on");mvTT(e);};
+const mvTT=e=>{tt.style.left=Math.min(e.clientX+14,window.innerWidth-250)+"px";tt.style.top=(e.clientY-10)+"px";};
+const hideTT=()=>tt.classList.remove("on");
+
+// ══════════════════════════════════════════════════════════════
+// CHART 0 — DISTRIBUTION DES NUANCES (listes + candidats)
+// ══════════════════════════════════════════════════════════════
+function drawDistrib(){
+  const data = [...NUANCES_RAW].sort((a,b) => b.listes - a.listes);
+  const maxListes = data[0].listes;
+  const maxCand   = data[0].cand;
+
+  const M = {top:16, right:100, bottom:16, left:230};
+  const W = Math.max(document.getElementById("parite")?.clientWidth - 40 || 700, 560);
+  const rH = 22, gap = 5;
+  const H = data.length * (rH + gap) + M.top + M.bottom;
+  const iW = W - M.left - M.right;
+
+  const svg = d3.select("#chart-distrib").attr("width", W).attr("height", H);
+  svg.selectAll("*").remove();
+  const g = svg.append("g").attr("transform", `translate(${M.left},${M.top})`);
+
+  const xL = d3.scaleLinear().domain([0, maxListes]).range([0, iW]);
+  const y  = d3.scaleBand().domain(data.map(d=>d.code||"—")).range([0, H - M.top - M.bottom]).padding(0.18);
+
+  // — une barre par nuance : listes en accent, candidats en trait fin derrière
+  data.forEach((d, i) => {
+    const yy = y(d.code || "—");
+    const bh = y.bandwidth();
+
+    // fond candidats (barre fine, plus claire)
+    const xCand = xL(d.cand / (maxCand / maxListes)); // scale candidats proportionnellement
+    g.append("rect")
+      .attr("x", 0).attr("y", yy + bh*0.25)
+      .attr("width", Math.min(xL(d.cand * maxListes / maxCand), iW))
+      .attr("height", bh * 0.5)
+      .attr("fill", "var(--muted)").attr("opacity", 0.3).attr("rx", 2);
+
+    // barre listes (pleine)
+    g.append("rect")
+      .attr("x", 0).attr("y", yy)
+      .attr("width", 0).attr("height", bh)
+      .attr("fill", d.code === "" ? "var(--muted2)" : "var(--accent)")
+      .attr("opacity", 0.75).attr("rx", 2)
+      .transition().duration(600).delay(i * 18)
+      .attr("width", xL(d.listes));
+
+    // label nb listes
+    g.append("text")
+      .attr("x", iW + 6).attr("y", yy + bh/2 + 4)
+      .attr("fill", "var(--text)").attr("font-size", 10).attr("font-weight", 500)
+      .text(d.listes.toLocaleString("fr"));
+
+    // label libellé (gauche)
+    const shortLib = d.lib.length > 32 ? d.lib.slice(0, 31) + "…" : d.lib;
+    g.append("text")
+      .attr("x", -6).attr("y", yy + bh/2 + 4)
+      .attr("text-anchor", "end").attr("fill", d.code === "" ? "var(--muted2)" : "var(--text)")
+      .attr("font-size", 10.5)
+      .text(shortLib);
+  });
+
+  // légende
+  const leg = svg.append("g").attr("transform", `translate(${M.left}, ${H - 12})`);
+  [{c:"var(--accent)", l:"Listes"}, {c:"var(--muted)", l:"Candidats (échelle relative)"}].forEach(({c,l}, i) => {
+    leg.append("rect").attr("x", i*160).attr("y", 0).attr("width", 10).attr("height", 10).attr("fill", c).attr("opacity", i===0?0.75:0.3).attr("rx",2);
+    leg.append("text").attr("x", i*160+14).attr("y", 9).attr("fill","var(--muted2)").attr("font-size",8.5).text(l);
+  });
+
+  // interactions
+  data.forEach((d) => {
+    const yy = y(d.code || "—");
+    const bh = y.bandwidth();
+    g.append("rect")
+      .attr("x", -M.left).attr("y", yy - 2)
+      .attr("width", W).attr("height", bh + 4)
+      .attr("fill", "transparent")
+      .style("cursor", "default")
+      .on("mousemove", (e) => showTT(
+        `<div class="tt-h">${d.lib}</div>
+         <div class="rr"><span>Code</span><span class="vv">${d.code || "—"}</span></div>
+         <div class="rr"><span>Listes déposées</span><span class="vv">${d.listes.toLocaleString("fr")}</span></div>
+         <div class="rr"><span>Candidats inscrits</span><span class="vv">${d.cand.toLocaleString("fr")}</span></div>
+         <div class="rr"><span>Femmes en tête de liste</span><span class="vv">${d.pct} %</span></div>`, e))
+      .on("mouseleave", hideTT);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHART 1A — PARITÉ PAR NUANCE
+// ══════════════════════════════════════════════════════════════
+function drawParite(){
+  const data=[...PARITE].sort((a,b)=>b.tdl_f-a.tdl_f);
+  const M={top:28,right:90,bottom:36,left:192};
+  const col=document.querySelector(".two-col");
+  const W=Math.max(col ? col.clientWidth/2-20 : 420, 360);
+  const rH=32, gap=8;
+  const H=data.length*(rH+gap)+M.top+M.bottom;
+  const iW=W-M.left-M.right, iH=H-M.top-M.bottom;
+
+  const svg=d3.select("#chart-parite").attr("width",W).attr("height",H);
+  svg.selectAll("*").remove();
+  const g=svg.append("g").attr("transform",`translate(${M.left},${M.top})`);
+  const xs=d3.scaleLinear().domain([0,100]).range([0,iW]);
+  const y=d3.scaleBand().domain(data.map(d=>d.label)).range([0,iH]).padding(0.25);
+
+  [25,50,75].forEach(v=>{
+    g.append("line").attr("x1",xs(v)).attr("x2",xs(v)).attr("y1",0).attr("y2",iH)
+      .attr("stroke",v===50?"#b5afa6":"var(--border)").attr("stroke-width",v===50?1.5:1)
+      .attr("stroke-dasharray",v===50?"none":"3,3");
+    g.append("text").attr("x",xs(v)).attr("y",-8).attr("text-anchor","middle")
+      .attr("fill",v===50?"var(--muted2)":"var(--muted)").attr("font-size",9).text(v+"%");
+  });
+  g.append("text").attr("x",xs(50)).attr("y",-18).attr("text-anchor","middle")
+    .attr("fill","#b5afa6").attr("font-size",8).text("← parité");
+
+  // colonne "nb listes" header
+  g.append("text").attr("x",iW+M.right/2).attr("y",-8).attr("text-anchor","middle")
+    .attr("fill","var(--muted2)").attr("font-size",9).text("listes");
+
+  const rows=g.selectAll(".row").data(data).join("g").attr("class","row")
+    .attr("transform",d=>`translate(0,${y(d.label)})`);
+
+  rows.append("rect").attr("width",iW).attr("height",y.bandwidth()).attr("fill","var(--surface)").attr("rx",2);
+  rows.append("rect").attr("width",xs(50)).attr("height",y.bandwidth()).attr("fill","#e8e3da").attr("rx",2);
+  rows.append("rect").attr("height",y.bandwidth()).attr("rx",2)
+    .attr("fill",d=>d.tdl_f>=40?"var(--female)":d.tdl_f>=30?"var(--warn)":"#c0392b")
+    .attr("opacity",.88).attr("width",0)
+    .transition().duration(750).delay((_,i)=>i*50).attr("width",d=>xs(d.tdl_f));
+
+  // % parité
+  rows.append("text").attr("x",d=>xs(d.tdl_f)+5).attr("y",y.bandwidth()/2+4)
+    .attr("fill","var(--text)").attr("font-size",11).attr("font-weight",600)
+    .text(d=>d.tdl_f+"%");
+
+  // nb listes — colonne à droite séparée par un léger trait
+  rows.append("line")
+    .attr("x1",iW+8).attr("x2",iW+8).attr("y1",2).attr("y2",y.bandwidth()-2)
+    .attr("stroke","var(--border)").attr("stroke-width",1);
+  rows.append("text").attr("x",iW+M.right/2).attr("y",y.bandwidth()/2+4)
+    .attr("text-anchor","middle").attr("fill","var(--muted2)").attr("font-size",10)
+    .text(d=>d.total>=1000 ? (d.total/1000).toFixed(1).replace('.0','')+'k' : d.total);
+
+  g.append("g").call(d3.axisLeft(y).tickSize(0).tickPadding(8))
+    .call(g=>g.select(".domain").remove())
+    .selectAll("text").attr("fill","var(--text)").attr("font-size",10.5);
+
+  const leg=svg.append("g").attr("transform",`translate(${M.left},${H-8})`);
+  [["var(--female)","≥ 40 %"],["var(--warn)","30–39 %"],["#c0392b","< 30 %"]].forEach(([c,l],i)=>{
+    leg.append("rect").attr("x",i*90).attr("width",8).attr("height",8).attr("fill",c).attr("rx",1);
+    leg.append("text").attr("x",i*90+12).attr("y",8).attr("fill","var(--muted2)").attr("font-size",8.5).text(l);
+  });
+
+  rows.style("cursor","default")
+    .on("mousemove",function(e,d){showTT(
+      `<div class="tt-h">${d.label}</div>
+       <div class="rr"><span>Têtes de liste femmes</span><span class="vv">${d.tdl_f}%</span></div>
+       <div class="rr"><span>Têtes de liste hommes</span><span class="vv">${(100-d.tdl_f).toFixed(1)}%</span></div>
+       <div class="rr"><span>Nombre de listes</span><span class="vv">${d.total.toLocaleString('fr')}</span></div>
+       <div class="rr"><span>Écart à la parité</span><span class="vv" style="color:var(--warn)">−${(50-d.tdl_f).toFixed(1)} pp</span></div>`,e);mvTT(e);})
+    .on("mouseleave",hideTT);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHART 1B — ÉVOLUTION TDL FEMMES
+// ══════════════════════════════════════════════════════════════
+function drawPariteEvol(){
+  const data=TDL_EVOL;
+  const col=document.querySelector(".two-col");
+  const colW=col ? col.clientWidth/2-20 : 320;
+  const W=Math.max(colW, 240);
+  const H=280;
+  const M={top:32,right:24,bottom:36,left:40};
+  const iW=W-M.left-M.right, iH=H-M.top-M.bottom;
+
+  const svg=d3.select("#chart-parite-evol").attr("width",W).attr("height",H);
+  svg.selectAll("*").remove();
+  const g=svg.append("g").attr("transform",`translate(${M.left},${M.top})`);
+  const x=d3.scalePoint().domain(data.map(d=>String(d.yr))).range([0,iW]).padding(0.3);
+  const y=d3.scaleLinear().domain([0,55]).range([iH,0]);
+
+  [10,20,30,40,50].forEach(v=>{
+    g.append("line").attr("x1",0).attr("x2",iW).attr("y1",y(v)).attr("y2",y(v))
+      .attr("stroke",v===50?"#b5afa6":"var(--border)")
+      .attr("stroke-width",v===50?1.2:1)
+      .attr("stroke-dasharray",v===50?"4,3":"2,3");
+    g.append("text").attr("x",-6).attr("y",y(v)+4).attr("text-anchor","end")
+      .attr("fill",v===50?"var(--muted2)":"var(--muted)").attr("font-size",8.5).text(v+"%");
+  });
+  g.append("text").attr("x",iW+2).attr("y",y(50)+4)
+    .attr("fill","#b5afa6").attr("font-size",8).text("parité");
+
+  const area=d3.area().x(d=>x(String(d.yr))).y0(iH).y1(d=>y(d.v)).curve(d3.curveMonotoneX);
+  g.append("path").datum(data).attr("d",area).attr("fill","var(--female)").attr("opacity",.12);
+  const line=d3.line().x(d=>x(String(d.yr))).y(d=>y(d.v)).curve(d3.curveMonotoneX);
+  g.append("path").datum(data).attr("d",line).attr("fill","none").attr("stroke","var(--female)").attr("stroke-width",2.5);
+
+  data.forEach(d=>{
+    g.append("circle").attr("cx",x(String(d.yr))).attr("cy",y(d.v)).attr("r",5)
+      .attr("fill","var(--female)").attr("stroke","var(--bg)").attr("stroke-width",2);
+    g.append("text").attr("x",x(String(d.yr))).attr("y",y(d.v)-12)
+      .attr("text-anchor","middle").attr("fill","var(--female)").attr("font-size",12).attr("font-weight",600)
+      .text(d.v+"%");
+  });
+
+  g.append("g").attr("transform",`translate(0,${iH})`)
+    .call(d3.axisBottom(x).tickSize(0).tickPadding(10))
+    .call(g=>g.select(".domain").remove())
+    .selectAll("text").attr("fill","var(--muted2)").attr("font-size",11);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CHART 2 — ÉVOLUTION MAIRES SORTANTS
+// ══════════════════════════════════════════════════════════════
+function drawMairesEvol(){
+  const data=MAIRES_EVOL;
+  const col=document.querySelector("#maires .two-col");
+  const W=Math.max(col ? col.clientWidth/2-20 : 380, 280);
+  const H=300;
+  const M={top:32,right:30,bottom:38,left:44};
+  const iW=W-M.left-M.right, iH=H-M.top-M.bottom;
+
+  const svg=d3.select("#chart-maires-evol").attr("width",W).attr("height",H);
+  svg.selectAll("*").remove();
+  const g=svg.append("g").attr("transform",`translate(${M.left},${M.top})`);
+  const x=d3.scalePoint().domain(data.map(d=>String(d.yr))).range([0,iW]).padding(0.3);
+  const y=d3.scaleLinear().domain([40,90]).range([iH,0]);
+
+  [50,60,70,80].forEach(v=>{
+    g.append("line").attr("x1",0).attr("x2",iW).attr("y1",y(v)).attr("y2",y(v))
+      .attr("stroke","var(--border)").attr("stroke-dasharray","2,3");
+    g.append("text").attr("x",-6).attr("y",y(v)+4).attr("text-anchor","end")
+      .attr("fill","var(--muted)").attr("font-size",8.5).text(v+"%");
+  });
+
+  const area=d3.area().x(d=>x(String(d.yr))).y0(iH).y1(d=>y(d.v)).curve(d3.curveMonotoneX);
+  g.append("path").datum(data).attr("d",area).attr("fill","var(--accent)").attr("opacity",.1);
+  const line=d3.line().x(d=>x(String(d.yr))).y(d=>y(d.v)).curve(d3.curveMonotoneX);
+  g.append("path").datum(data).attr("d",line).attr("fill","none").attr("stroke","var(--accent)").attr("stroke-width",2.5);
+
+  data.forEach((d,i)=>{
+    const isLast = i===data.length-1;
+    g.append("circle").attr("cx",x(String(d.yr))).attr("cy",y(d.v)).attr("r",isLast?7:5)
+      .attr("fill",isLast?"var(--warn)":"var(--accent)").attr("stroke","var(--bg)").attr("stroke-width",2);
+    g.append("text").attr("x",x(String(d.yr))).attr("y",y(d.v)-13)
+      .attr("text-anchor","middle")
+      .attr("fill",isLast?"var(--warn)":"var(--accent)")
+      .attr("font-size",isLast?13:11).attr("font-weight",600)
+      .text(d.v+"%");
+  });
+
+  // annotation 2026
+  const x26=x("2026"), y26=y(54);
+  g.append("text").attr("x",x26+10).attr("y",y26+4)
+    .attr("fill","var(--warn)").attr("font-size",9)
+    .text("record bas");
+
+  g.append("g").attr("transform",`translate(0,${iH})`)
+    .call(d3.axisBottom(x).tickSize(0).tickPadding(10))
+    .call(g=>g.select(".domain").remove())
+    .selectAll("text").attr("fill","var(--muted2)").attr("font-size",11);
+}
+
+// ══════ NAV ══════
+function initNav(){
+  const links=document.querySelectorAll("nav a");
+  ["parite","maires","competition"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) new IntersectionObserver(entries=>{
+      if(entries[0].isIntersecting){
+        links.forEach(l=>l.classList.remove("active"));
+        const a=document.querySelector(`nav a[href="#${id}"]`);
+        if(a) a.classList.add("active");
+      }
+    },{threshold:0.2}).observe(el);
+  });
+}
+
+function drawAll(){
+  drawDistrib();
+  drawParite();
+  drawPariteEvol();
+  drawMairesEvol();
+}
+
+drawAll();
+initNav();
+window.addEventListener("resize", drawAll);
+</script>
+</body>
+</html>
