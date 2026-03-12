@@ -528,7 +528,7 @@
 
 <footer>
   <span>Données : <a href="https://www.data.gouv.fr" target="_blank">data.gouv.fr</a> · Ministère de l'Intérieur · CEVIPOF Sciences Po</span>
-  <span>Réalisé par <strong>Félix AT</strong> · Mars 2026 · Open data · Libre de partager</span>
+  <span>Élections municipales 15 &amp; 22 mars 2026 · Open data · Libre de partager</span>
 </footer>
 
 <script>
@@ -627,10 +627,17 @@ function drawDistrib(){
   const maxListes = data[0].listes;
   const maxCand   = data[0].cand;
 
-  const M = {top:16, right:100, bottom:16, left:230};
-  const W = Math.max(document.getElementById("parite")?.clientWidth - 40 || 700, 560);
-  const rH = 22, gap = 5;
-  const H = data.length * (rH + gap) + M.top + M.bottom;
+  const isMobile = window.innerWidth < 600;
+  const leftMargin = isMobile ? 140 : 230;
+  const rightMargin = isMobile ? 60 : 100;
+  const rowH = isMobile ? 26 : 22;
+  const gap  = isMobile ? 6 : 5;
+  const fontSize = isMobile ? 9 : 10.5;
+  const maxLabelLen = isMobile ? 18 : 32;
+
+  const M = {top:16, right:rightMargin, bottom:16, left:leftMargin};
+  const W = Math.max(document.getElementById("parite")?.clientWidth - 40 || 700, isMobile ? 320 : 560);
+  const H = data.length * (rowH + gap) + M.top + M.bottom;
   const iW = W - M.left - M.right;
 
   const svg = d3.select("#chart-distrib").attr("width", W).attr("height", H);
@@ -646,7 +653,6 @@ function drawDistrib(){
     const bh = y.bandwidth();
 
     // fond candidats (barre fine, plus claire)
-    const xCand = xL(d.cand / (maxCand / maxListes)); // scale candidats proportionnellement
     g.append("rect")
       .attr("x", 0).attr("y", yy + bh*0.25)
       .attr("width", Math.min(xL(d.cand * maxListes / maxCand), iW))
@@ -665,15 +671,15 @@ function drawDistrib(){
     // label nb listes
     g.append("text")
       .attr("x", iW + 6).attr("y", yy + bh/2 + 4)
-      .attr("fill", "var(--text)").attr("font-size", 10).attr("font-weight", 500)
+      .attr("fill", "var(--text)").attr("font-size", isMobile ? 9 : 10).attr("font-weight", 500)
       .text(d.listes.toLocaleString("fr"));
 
     // label libellé (gauche)
-    const shortLib = d.lib.length > 32 ? d.lib.slice(0, 31) + "…" : d.lib;
+    const shortLib = d.lib.length > maxLabelLen ? d.lib.slice(0, maxLabelLen-1) + "…" : d.lib;
     g.append("text")
       .attr("x", -6).attr("y", yy + bh/2 + 4)
       .attr("text-anchor", "end").attr("fill", d.code === "" ? "var(--muted2)" : "var(--text)")
-      .attr("font-size", 10.5)
+      .attr("font-size", fontSize)
       .text(shortLib);
   });
 
@@ -710,7 +716,9 @@ function drawParite(){
   const data=[...PARITE].sort((a,b)=>b.tdl_f-a.tdl_f);
   const M={top:28,right:90,bottom:36,left:192};
   const col=document.querySelector(".two-col");
-  const W=Math.max(col ? col.clientWidth/2-20 : 420, 360);
+  const stacked=!col || window.innerWidth < 820;
+  const colW=stacked ? (col ? col.clientWidth-8 : 420) : col.clientWidth/2-20;
+  const W=Math.max(colW, 360);
   const rH=32, gap=8;
   const H=data.length*(rH+gap)+M.top+M.bottom;
   const iW=W-M.left-M.right, iH=H-M.top-M.bottom;
@@ -784,7 +792,8 @@ function drawParite(){
 function drawPariteEvol(){
   const data=TDL_EVOL;
   const col=document.querySelector(".two-col");
-  const colW=col ? col.clientWidth/2-20 : 320;
+  const stacked=!col || col.clientWidth < 820 || window.innerWidth < 820;
+  const colW=stacked ? (col ? col.clientWidth-8 : 320) : col.clientWidth/2-20;
   const W=Math.max(colW, 240);
   const H=280;
   const M={top:32,right:24,bottom:36,left:40};
@@ -832,7 +841,9 @@ function drawPariteEvol(){
 function drawMairesEvol(){
   const data=MAIRES_EVOL;
   const col=document.querySelector("#maires .two-col");
-  const W=Math.max(col ? col.clientWidth/2-20 : 380, 280);
+  const stacked=!col || window.innerWidth < 820;
+  const colW=stacked ? (col ? col.clientWidth-8 : 380) : col.clientWidth/2-20;
+  const W=Math.max(colW, 280);
   const H=300;
   const M={top:32,right:30,bottom:38,left:44};
   const iW=W-M.left-M.right, iH=H-M.top-M.bottom;
