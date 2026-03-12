@@ -220,6 +220,26 @@
     margin-top:0.4rem;
   }
 
+  /* ── TOGGLE ── */
+  .toggle-label {
+    display:flex; align-items:center; gap:0.5rem;
+    cursor:pointer; user-select:none; font-size:0.72rem; color:var(--muted2);
+  }
+  .toggle-label input { display:none; }
+  .toggle-track {
+    width:32px; height:18px; border-radius:9px;
+    background:var(--border); position:relative;
+    transition:background 0.2s; flex-shrink:0;
+  }
+  .toggle-thumb {
+    position:absolute; top:2px; left:2px;
+    width:14px; height:14px; border-radius:50%;
+    background:white; transition:transform 0.2s;
+    box-shadow:0 1px 3px rgba(0,0,0,.2);
+  }
+  .toggle-label input:checked + .toggle-track { background:var(--accent); }
+  .toggle-label input:checked + .toggle-track .toggle-thumb { transform:translateX(14px); }
+
   .srcbar { margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--border); font-size:.68rem; color:var(--muted2); line-height:2; }
   .srcbar a { color:var(--muted2); text-decoration:underline; text-decoration-color:var(--border); }
   .srcbar a:hover { color:var(--text); }
@@ -291,7 +311,14 @@
 
   <!-- Distribution -->
   <div class="badge-source" style="margin-top:1.2rem">Ministère de l'Intérieur · Fichier candidatures · 28/02/2026</div>
-  <div class="col-label" style="margin-top:0.4rem">Nombre de listes et de candidats par nuance — toutes communes</div>
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-top:0.4rem; margin-bottom:0.2rem;">
+    <div class="col-label" style="margin:0">Nombre de listes par nuance politique — toutes communes</div>
+    <label class="toggle-label">
+      <input type="checkbox" id="toggle-sans-nuance" checked>
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-text">Inclure les listes sans nuance attribuée</span>
+    </label>
+  </div>
   <div class="chart-scroll"><svg id="chart-distrib"></svg></div>
 
   <div class="insight">
@@ -623,9 +650,11 @@ const hideTT=()=>tt.classList.remove("on");
 // CHART 0 — DISTRIBUTION DES NUANCES (listes + candidats)
 // ══════════════════════════════════════════════════════════════
 function drawDistrib(){
-  const data = [...NUANCES_RAW].sort((a,b) => b.listes - a.listes);
+  const showSans = document.getElementById("toggle-sans-nuance")?.checked !== false;
+  const data = [...NUANCES_RAW]
+    .filter(d => showSans || d.code !== "")
+    .sort((a,b) => b.listes - a.listes);
   const maxListes = data[0].listes;
-  const maxCand   = data[0].cand;
 
   const isMobile = window.innerWidth < 600;
   const leftMargin = isMobile ? 140 : 230;
@@ -652,13 +681,6 @@ function drawDistrib(){
     const yy = y(d.code || "—");
     const bh = y.bandwidth();
 
-    // fond candidats (barre fine, plus claire)
-    g.append("rect")
-      .attr("x", 0).attr("y", yy + bh*0.25)
-      .attr("width", Math.min(xL(d.cand * maxListes / maxCand), iW))
-      .attr("height", bh * 0.5)
-      .attr("fill", "var(--muted)").attr("opacity", 0.3).attr("rx", 2);
-
     // barre listes (pleine)
     g.append("rect")
       .attr("x", 0).attr("y", yy)
@@ -683,13 +705,6 @@ function drawDistrib(){
       .text(shortLib);
   });
 
-  // légende
-  const leg = svg.append("g").attr("transform", `translate(${M.left}, ${H - 12})`);
-  [{c:"var(--accent)", l:"Listes"}, {c:"var(--muted)", l:"Candidats (échelle relative)"}].forEach(({c,l}, i) => {
-    leg.append("rect").attr("x", i*160).attr("y", 0).attr("width", 10).attr("height", 10).attr("fill", c).attr("opacity", i===0?0.75:0.3).attr("rx",2);
-    leg.append("text").attr("x", i*160+14).attr("y", 9).attr("fill","var(--muted2)").attr("font-size",8.5).text(l);
-  });
-
   // interactions
   data.forEach((d) => {
     const yy = y(d.code || "—");
@@ -703,7 +718,6 @@ function drawDistrib(){
         `<div class="tt-h">${d.lib}</div>
          <div class="rr"><span>Code</span><span class="vv">${d.code || "—"}</span></div>
          <div class="rr"><span>Listes déposées</span><span class="vv">${d.listes.toLocaleString("fr")}</span></div>
-         <div class="rr"><span>Candidats inscrits</span><span class="vv">${d.cand.toLocaleString("fr")}</span></div>
          <div class="rr"><span>Femmes en tête de liste</span><span class="vv">${d.pct} %</span></div>`, e))
       .on("mouseleave", hideTT);
   });
@@ -910,6 +924,11 @@ function drawAll(){
   drawPariteEvol();
   drawMairesEvol();
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tog = document.getElementById("toggle-sans-nuance");
+  if (tog) tog.addEventListener("change", drawDistrib);
+});
 
 drawAll();
 initNav();
