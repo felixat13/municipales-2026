@@ -62,7 +62,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   padding: 11px 13px; min-width: 220px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-#legend h3 { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; }
+#legend h3 { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0; }
+#legend-header:hover #legend-arrow { color: #555; }
 #legend-sources { margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; font-size: 9px; color: #aaa; line-height: 1.5; }
 #legend-sources a { color: #aaa; text-decoration: none; }
 #legend-sources a:hover { color: #666; text-decoration: underline; }
@@ -85,6 +86,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   .tooltip-box { width: 92vw; max-width: 92vw; }
 }
 #info-panel .tooltip-box { width: 285px; max-width: calc(100vw - 28px); }
+.tooltip-close {
+  position: absolute; top: 8px; right: 8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: #f0f0f0; color: #666;
+  font-size: 14px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: all;
+}
+.tooltip-close:hover { background: #ddd; color: #111; }
+.tooltip-box { position: relative; }
 .leaflet-tooltip { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
 .leaflet-tooltip::before { display: none !important; }
 </style>
@@ -98,7 +109,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 </div>
 <div id="map"></div>
 <div id="legend">
-  <h3>Listes en tête</h3>
+  <div id="legend-header" onclick="toggleLegend()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin-bottom:7px;">
+    <h3 style="margin-bottom:0">Listes en tête</h3>
+    <span id="legend-arrow" style="font-size:11px;color:#aaa;transition:transform .2s">&#9650;</span>
+  </div>
   <div id="legend-body">
 <div class="leg-row"><div class="leg-dot" style="background:#9B006E"></div><div class="leg-info"><span class="leg-name">Pierre HURMIC</span><span class="leg-sub">Union gauche · Les Ecologistes</span></div><span class="leg-count" id="cnt-lug"></span></div>
 <div class="leg-row"><div class="leg-dot" style="background:#FF8000"></div><div class="leg-info"><span class="leg-name">Thomas CAZENAVE</span><span class="leg-sub">Union centre · Renaissance</span></div><span class="leg-count" id="cnt-luc"></span></div>
@@ -236,6 +250,7 @@ function buildPanelHtml(props) {
   }).join('');
 
   return `<div class="tooltip-box">
+    <button class="tooltip-close" onclick="document.getElementById('info-panel').style.display='none';if(window._activeLayer){window._activeLayer.setStyle({fillOpacity:0.75,weight:1,color:'#fff'});window._activeLayer=null;}" title="Fermer">×</button>
     <div class="tooltip-bv">Bureau de vote n\u00b0${props.code}</div>
     <div class="tooltip-name">${props.libelle||''}</div>
     <div class="tooltip-winner" style="background:${wColor}18;border-left:3px solid ${wColor}">
@@ -258,10 +273,11 @@ function buildPanelHtml(props) {
   </div>`;
 }
 
-let activeLayer = null;
+let activeLayer = null; window._activeLayer = null;
 function resetLayer(layer) {
   layer.setStyle({ fillOpacity: 0.75, weight: 1, color: '#fff' });
   hidePanel();
+  activeLayer = null; window._activeLayer = null;
 }
 
 const isMobile = () => window.innerWidth <= 600;
@@ -280,7 +296,7 @@ L.geoJSON(geojson, {
         this.setStyle({ fillOpacity: 0.95, weight: 2, color: '#333' });
         this.bringToFront();
         showPanel(buildPanelHtml(feature.properties), e.originalEvent.clientX, e.originalEvent.clientY);
-        activeLayer = this;
+        activeLayer = this; window._activeLayer = this;
       });
     } else {
       layer.on('mouseover', function(e) {
@@ -298,4 +314,14 @@ L.geoJSON(geojson, {
 
 map.on('click', () => { if (activeLayer) { resetLayer(activeLayer); activeLayer = null; } });
 window.addEventListener('resize', () => map.invalidateSize());
+
+function toggleLegend() {
+  const body  = document.getElementById('legend-body');
+  const arrow = document.getElementById('legend-arrow');
+  const sources = document.getElementById('legend-sources');
+  const collapsed = body.style.display === 'none';
+  body.style.display    = collapsed ? '' : 'none';
+  if (sources) sources.style.display = collapsed ? '' : 'none';
+  arrow.style.transform = collapsed ? '' : 'rotate(180deg)';
+}
 </script>
