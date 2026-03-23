@@ -154,9 +154,10 @@
       border-radius: 8px;
       overflow: hidden;
       flex-shrink: 0;
+      min-width: 0;
     }
     .tab-btn {
-      padding: 7px 18px;
+      padding: 7px 14px;
       font-size: 12px;
       font-weight: 600;
       color: var(--text-muted);
@@ -169,6 +170,11 @@
     .tab-btn:hover  { background: #f5f5f5; }
     .tab-btn.active { background: #222; color: #fff; }
     .tab-btn + .tab-btn { border-left: var(--border); }
+    .tab-short { display: none; }
+    @media (max-width: 420px) {
+      .tab-long  { display: none; }
+      .tab-short { display: inline; }
+    }
 
     /* Overlay 2nd tour */
     #overlay-t2 {
@@ -255,6 +261,9 @@
     ───────────────────────────────────────── */
     @media (max-width: 600px) {
       #header p { display: none; }
+      #header { gap: 8px; padding: 8px 12px; }
+      #header-text h1 { font-size: 13px; }
+      .tab-btn { padding: 6px 9px; font-size: 11px; }
 
       /* La légende T1 passe en bandeau bas */
       #legend {
@@ -301,8 +310,8 @@
       <p>Résultats par bureau de vote</p>
     </div>
     <div id="tour-tabs">
-      <button class="tab-btn active" id="tab-t1" onclick="switchTour(1)">1er tour — 15 mars</button>
-      <button class="tab-btn"        id="tab-t2" onclick="switchTour(2)">2nd tour — 22 mars</button>
+      <button class="tab-btn active" id="tab-t1" onclick="switchTour(1)"><span class="tab-long">1er tour — 15 mars</span><span class="tab-short">1er tour</span></button>
+      <button class="tab-btn"        id="tab-t2" onclick="switchTour(2)"><span class="tab-long">2nd tour — 22 mars</span><span class="tab-short">2nd tour</span></button>
     </div>
   </div>
 
