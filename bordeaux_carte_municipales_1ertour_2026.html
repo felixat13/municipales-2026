@@ -39,14 +39,18 @@
       border-bottom: var(--border);
       padding: 10px 16px;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
-    #header h1 { font-size: 15px; font-weight: 600; color: var(--text-main); line-height: 1.2; }
-    #header p  { font-size: 11px; color: var(--text-muted); }
+    #header-text h1 { font-size: 15px; font-weight: 600; color: var(--text-main); line-height: 1.2; }
+    #header-text p  { font-size: 11px; color: var(--text-muted); }
 
     /* ─────────────────────────────────────────
        Map
     ───────────────────────────────────────── */
-    #map { flex: 1; width: 100%; min-height: 0; }
+    #map { flex: 1; width: 100%; min-height: 0; position: relative; }
 
     /* ─────────────────────────────────────────
        Info panel (popup au survol/clic)
@@ -141,6 +145,57 @@
     .panel-stat-lbl { font-size: 9.5px; color: var(--text-muted); }
 
     /* ─────────────────────────────────────────
+       Onglets de tour
+    ───────────────────────────────────────── */
+    #tour-tabs {
+      display: flex;
+      background: #f0f0f0;
+      border: var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 7px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover  { background: #f5f5f5; }
+    .tab-btn.active { background: #222; color: #fff; }
+    .tab-btn + .tab-btn { border-left: var(--border); }
+
+    /* Overlay 2nd tour */
+    #overlay-t2 {
+      position: absolute;
+      inset: 0;
+      z-index: 999;
+      background: rgba(245,245,245,0.82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    #overlay-t2.visible { display: flex; }
+    #overlay-banner {
+      background: #fff;
+      border: var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      padding: 24px 32px;
+      text-align: center;
+      max-width: 320px;
+    }
+    #overlay-banner .banner-icon  { font-size: 28px; margin-bottom: 10px; }
+    #overlay-banner .banner-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+    #overlay-banner .banner-sub   { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ─────────────────────────────────────────
        Légende (fixe, bas gauche)
     ───────────────────────────────────────── */
     #legend {
@@ -222,11 +277,24 @@
 <body>
 
   <div id="header">
-    <h1>Municipales 2026 — Bordeaux, 1er tour</h1>
-    <p>Résultats par bureau de vote · 15 mars 2026</p>
+    <div id="header-text">
+      <h1>Municipales 2026 — Bordeaux</h1>
+      <p>Résultats par bureau de vote</p>
+    </div>
+    <div id="tour-tabs">
+      <button class="tab-btn active" id="tab-t1" onclick="switchTour(1)">1er tour — 15 mars</button>
+      <button class="tab-btn"        id="tab-t2" onclick="switchTour(2)">2nd tour — 22 mars</button>
+    </div>
   </div>
 
-  <div id="map"></div>
+  <div id="map">
+    <div id="overlay-t2">
+      <div id="overlay-banner">
+        <div class="banner-icon">🗳️</div>
+        <div class="banner-title">Résultats du 2nd tour bientôt disponibles</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Panneau d'info (affiché au survol / clic) -->
   <div id="info-panel"></div>
@@ -249,7 +317,43 @@
     </div>
     <div id="legend-sources">
       <a href="https://www.data.gouv.fr/fr/datasets/elections-municipales-2026-resultats-du-premier-tour/" target="_blank">Résultats : Ministère de l'Intérieur / data.gouv.fr</a><br>
-      <a href="https://opendata.bordeaux-metropole.fr/explore/dataset/el_bureauvote_s/" target="_blank">Bureaux de vote : Bordeaux Métropole Open Data</a>
+      <a href="https://opendata.bordeaux-metropole.fr/explore/dataset/el_bureauvote_s/" target="_blank">Bureaux de vote : Bordeaux Métropole Open Data</a><br><br>
+      Carte réalisée par <a href="https://www.linkedin.com/in/felixat-data-analyst/" target="_blank" style="font-weight:600;color:#0a66c2;">Félix At</a>
+    </div>
+  </div>
+
+  <!-- Légende 2nd tour (masquée par défaut) -->
+  <div id="legend-t2" style="display:none;position:absolute;bottom:24px;left:16px;z-index:1000;background:rgba(255,255,255,0.97);border:var(--border);border-radius:var(--radius);padding:11px 13px;min-width:220px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:9px;">Listes en lice — 2nd tour</div>
+    <div class="leg-row">
+      <div class="leg-dot" style="background:#FF5500"></div>
+      <div>
+        <span class="leg-name">Thomas CAZENAVE</span>
+        <span class="leg-sub">Union centre · Renaissance</span>
+      </div>
+      <span class="leg-count" style="text-align:right;margin-left:auto;">
+        <span class="leg-pct">50,95&nbsp;%</span>
+        <span class="leg-bv">49&nbsp;014&nbsp;voix · élu maire</span>
+      </span>
+    </div>
+    <div class="leg-row">
+      <div class="leg-dot" style="background:#9B006E"></div>
+      <div>
+        <span class="leg-name">Pierre HURMIC</span>
+        <span class="leg-sub">Union gauche · Les Écologistes</span>
+      </div>
+      <span class="leg-count" style="text-align:right;margin-left:auto;">
+        <span class="leg-pct">49,05&nbsp;%</span>
+        <span class="leg-bv">47&nbsp;187&nbsp;voix · sortant</span>
+      </span>
+    </div>
+    <div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee;font-size:10px;color:#222;line-height:1.5em;font-weight:500;">
+      Résultats par bureau de vote à venir
+    </div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:9px;color:var(--text-faint);line-height:1.6;">
+      <a href="https://www.data.gouv.fr/fr/datasets/elections-municipales-2026-resultats-du-second-tour/" target="_blank" style="color:var(--text-faint);text-decoration:none;">Résultats : Ministère de l'Intérieur / data.gouv.fr</a><br>
+      <a href="https://opendata.bordeaux-metropole.fr/explore/dataset/el_bureauvote_s/" target="_blank" style="color:var(--text-faint);text-decoration:none;">Bureaux de vote : Bordeaux Métropole Open Data</a><br><br>
+      Carte réalisée par <a href="https://www.linkedin.com/in/felixat-data-analyst/" target="_blank" style="font-weight:600;color:#0a66c2;">Félix At</a>
     </div>
   </div>
 
@@ -300,11 +404,13 @@
     ['LUG', 'LUC', 'LDVC', 'LFI', 'LRN'].forEach(nuance => {
       const el = document.getElementById('cnt-' + nuance.toLowerCase());
       if (!el) return;
-      const bv  = bvCounts[nuance] ? bvCounts[nuance] + ' bureaux de vote' : '';
-      const pct = totalExprimes.val > 0
-        ? (totalVoix[nuance] / totalExprimes.val * 100).toFixed(1) + ' %'
+      const voix = totalVoix[nuance] || 0;
+      const bv   = bvCounts[nuance] ? bvCounts[nuance] + ' bureaux de vote' : '';
+      const pct  = totalExprimes.val > 0
+        ? (voix / totalExprimes.val * 100).toFixed(1) + ' %'
         : '';
-      if (pct) el.innerHTML = `<span class="leg-pct">${pct}</span>${bv ? '<br><span class="leg-bv">' + bv + '</span>' : ''}`;
+      const voixFmt = voix.toLocaleString('fr-FR') + ' voix';
+      if (pct) el.innerHTML = `<span class="leg-pct">${pct}</span><span class="leg-bv">${voixFmt}${bv ? ' · ' + bv : ''}</span>`;
     });
 
 
@@ -499,6 +605,30 @@
 
 
     // ─────────────────────────────────────────
+    // ─────────────────────────────────────────
+    // Bascule entre les tours
+    // ─────────────────────────────────────────
+    function switchTour(tour) {
+      const overlay  = document.getElementById('overlay-t2');
+      const legendT1 = document.getElementById('legend');
+      const legendT2 = document.getElementById('legend-t2');
+      const t1btn    = document.getElementById('tab-t1');
+      const t2btn    = document.getElementById('tab-t2');
+      if (tour === 2) {
+        overlay.classList.add('visible');
+        legendT1.style.display = 'none';
+        legendT2.style.display = '';
+        t1btn.classList.remove('active');
+        t2btn.classList.add('active');
+      } else {
+        overlay.classList.remove('visible');
+        legendT1.style.display = '';
+        legendT2.style.display = 'none';
+        t1btn.classList.add('active');
+        t2btn.classList.remove('active');
+      }
+    }
+
     // Toggle légende (enrouler / dérouler)
     // ─────────────────────────────────────────
     function toggleLegend() {
