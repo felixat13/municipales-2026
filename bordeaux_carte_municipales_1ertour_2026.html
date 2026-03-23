@@ -256,7 +256,7 @@
     @media (max-width: 600px) {
       #header p { display: none; }
 
-      /* La légende passe en bandeau bas */
+      /* La légende T1 passe en bandeau bas */
       #legend {
         bottom: 0; left: 0; right: 0;
         border-radius: 12px 12px 0 0;
@@ -266,6 +266,25 @@
         max-height: 44vh;
         overflow-y: auto;
       }
+
+      /* La légende T2 idem */
+      #legend-t2 {
+        position: absolute !important;
+        bottom: 0 !important; left: 0 !important; right: 0 !important;
+        border-radius: 12px 12px 0 0 !important;
+        border-bottom: none !important;
+        padding: 10px 12px 14px !important;
+        min-width: unset !important;
+        max-height: 44vh;
+        overflow-y: auto;
+        z-index: 1001 !important;
+      }
+
+      /* Le bandeau overlay : centré verticalement dans le tiers haut */
+      #overlay-t2 { align-items: flex-start; padding-top: 20px; }
+      #overlay-banner { padding: 16px 20px; }
+      .banner-icon { font-size: 22px !important; margin-bottom: 6px !important; }
+      .banner-title { font-size: 13px !important; }
     }
 
     /* Leaflet tooltip reset (on n'utilise pas les tooltips natifs) */
